@@ -15,6 +15,53 @@ impl ListNode {
     }
 }
 
+pub struct MaxHeap {
+    pub nums: Vec<i32>,
+}
+
+impl MaxHeap {
+    fn new(nums: Vec<i32>) -> MaxHeap {
+        let mut heap = MaxHeap { nums };
+        heap = heap.CreateHeap();
+        heap.Sort()
+    }
+
+    fn CreateHeap(mut self) -> MaxHeap {
+        let size = self.nums.len();
+        for i in (0..size).rev() {
+            self = self.MaxHeap(size, i);
+        }
+        self
+    }
+
+    fn MaxHeap(mut self, heap_size: usize, i: usize) -> MaxHeap {
+        let mut largest = i;
+        let left = 2 * i + 1;
+        let right = 2 * i + 2;
+        if left < heap_size && self.nums[left] > self.nums[largest] {
+            largest = left;
+        }
+        if right < heap_size && self.nums[right] > self.nums[largest] {
+            largest = right;
+        }
+        if largest != i {
+            self.nums.swap(i, largest);
+            return self.MaxHeap(heap_size, largest);
+        }
+        self
+    }
+
+    fn Sort(mut self) -> MaxHeap {
+        let mut size = self.nums.len();
+        for i in (0..size).rev() {
+            self.nums.swap(0, i);
+            size -= 1;
+            self = self.MaxHeap(size, 0);
+        }
+        self
+    }
+}
+
 impl Solution {
     /**
      * LEETCODE QUESTIONS
@@ -212,20 +259,8 @@ impl Solution {
      *   -
      */
     pub fn find_median_sorted_arrays(nums1: Vec<i32>, nums2: Vec<i32>) -> f64 {
-        // Small optimization for a very specific case...
-        if nums1.len() == 0 {
-            if num2.len() % 2 == 0 {
-                return (nums2[nums2.len() / 2] + nums2[(nums2.len() / 2) - 1]) as f64 / 2.0;
-            } else {
-                return nums2[nums2.len() / 2] as f64;
-            }
-        }
-        if nums2.len() == 0 {
-            if num1.len() % 2 == 0 {
-                return (nums1[nums1.len() / 2] + nums1[(nums1.len() / 2) - 1]) as f64 / 2.0;
-            } else {
-                return nums1[nums1.len() / 2] as f64;
-            }
+        if nums1.len() < nums2.len() {
+            return Solution::find_median_sorted_arrays(nums2, nums1);
         }
 
         let mut merged = Vec::new();
@@ -249,11 +284,18 @@ impl Solution {
         }
 
         if i < nums1.len() {
-            merged.push(nums1[i]);
+            while i + j < total_size / 2 {
+                merged.push(nums1[i]);
+                i += 1;
+            }
         }
         if j < nums2.len() {
-            merged.push(nums2[j]);
+            while i + j < total_size / 2 {
+                merged.push(nums2[j]);
+                j += 1;
+            }
         }
+
         if total_size % 2 == 0 {
             (merged[total_size / 2] + merged[(total_size / 2) - 1]) as f64 / 2.0
         } else {
@@ -332,6 +374,67 @@ impl Solution {
             set.insert(num, 1);
         }
         false
+    }
+
+    /** LEETCODE 443. String Compression [https://leetcode.com/problems/string-compression/] (Medium)
+     *
+     */
+    pub fn compress(chars: &mut Vec<char>) -> i32 {
+        let mut counts: Vec<i32> = Vec::new();
+        let mut started = true;
+        let mut current: char = chars[0];
+        let mut i = 0;
+        let smaller_iter = chars
+            .into_iter()
+            .filter(|val| {
+                if started {
+                    started = false;
+                    return true;
+                }
+
+                if **val == current {
+                    if i >= counts.len() {
+                        counts.push(2);
+                    } else {
+                        counts[i] += 1;
+                    }
+                    return false;
+                }
+                current = **val;
+                i += 1;
+                if i >= counts.len() {
+                    counts.push(1);
+                }
+                return true;
+            })
+            .map(|val| {
+                let return_val = val.to_string().chars().next().unwrap();
+                return_val
+            })
+            .collect::<Vec<char>>();
+        let mut return_vec: Vec<char> = Vec::new();
+        for (i, string) in smaller_iter.iter().enumerate() {
+            let count = counts.get(i).unwrap_or(&1);
+            return_vec.push(*string);
+            if i >= counts.len() {
+                continue;
+            }
+            if counts[i] > 1 {
+                for str_count in counts[i].to_string().chars().into_iter() {
+                    return_vec.push(str_count);
+                }
+            }
+        }
+        *chars = return_vec;
+        chars.len() as i32
+    }
+
+    /** LEETCODE 912. Sort an Array [https://leetcode.com/problems/sort-an-array/] (Medium)
+     *
+     */
+    pub fn sort_array(nums: Vec<i32>) -> Vec<i32> {
+        let heap = MaxHeap::new(nums);
+        return heap.nums;
     }
 }
 
